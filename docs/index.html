@@ -1591,12 +1591,6 @@ Estimator</h1>
 </div>
 
 
-<!--
-How to use this template:
-* Put in code chunks/markdown answers for each question.
-* Do not erase any of the headers, instructions, or css below.
-* Look at your homework before you submit to ensure you didn't make any formatting errors.
--->
 <style>
 
 
@@ -1619,10 +1613,10 @@ margin-bottom: 10px;
 </style>
 <div id="introduction" class="section level1">
 <h1>Introduction</h1>
-<p><em>This week your task is (again!) to estimate the impact of the
-<strong>Progresa</strong> program, a government social assistance
-program in Mexico, using real data. However, this time you will use
-differences-in-differences estimator.</em></p>
+<p><em>Estimate the impact of the <strong>Progresa</strong> program, a
+government social assistance program in Mexico, using real data.
+However, this time you will use differences-in-differences
+estimator.</em></p>
 <p><em>This program, as well as the details of its impact, are described
 in <strong>schultz2004JofDevelEcon</strong>(available on Canvas). The
 data (<strong>progresa-sample.csv.gz</strong>, the same dataset as last
@@ -1633,41 +1627,23 @@ families who were considered poor in certain villages (progresa
 villages) received a government subsidy given their kids attended
 school. The progresa/non-progresa villages were chosen
 randomly.</em></p>
-<p><em>The goal of this problem set is to</em> * <em>compare samples
-(with t-test);</em> * <em>implement and use the double-differences
-estimator</em> <em>Your task is to estimate the impact of progresa
-subsidies on the school attendance.</em></p>
-<ul>
-<li><em>please submit your code (rmd) and html.</em></li>
-<li><em>Please write well. Do not print too many lines of data! A few
-lines are good for illustration/understanding but 10 or more lines are
-usually too much.</em></li>
-<li><em>Always explain and comment your results, do not expect the
-grader is able to pick the correct number out of many with no further
-explanations.</em></li>
-<li><em>Working together is fun and useful but you have to submit your
-own work. Discussing the solutions and problems with your classmates is
-all right but do not copy-paste their solution! Please list the students
-you collaborated with.</em></li>
-</ul>
+<p><em>Goals</em> * <em>compare samples (with t-test);</em> *
+<em>implement and use the double-differences estimator</em> <em>Task is
+to estimate the impact of Progresa subsidies on school
+attendance.</em></p>
 </div>
 <div id="was-the-randomization-done-correctly-40pt" class="section level1">
 <h1>1: Was the randomization done correctly? (40pt)</h1>
-<p><em>Your first task is to analyze whether randomization was performed
-correctly. Perfect randomization ensures that the treatment group and
-the control group are similar. This is less important in terms of
-observable characteristics, but very-very important for unobservables.
-Obviously, we can only analyze the observables: are the pre-treatment
-(1997) demographic and village-related characteristics for the poor
-equal (in average) in treatment and control villages?</em></p>
+<p><em>Analyze whether randomization was performed correctly. Perfect
+randomization ensures that the treatment group and the control group are
+similar. This is less important in terms of observable characteristics,
+but very-very important for unobservables. Obviously, we can only
+analyze the observables: are the pre-treatment (1997) demographic and
+village-related characteristics for the poor equal (in average) in
+treatment and control villages?</em></p>
 <pre class="r"><code>library(tidyverse)</code></pre>
 <div id="section" class="section level2">
 <h2>1.1</h2>
-<p><em>(14pt) Present your results in a single table with the following
-columns and 14 (or so) rows. The table should look something like this:
-<strong>(See homework PDF for table)</strong> You can see a very similar
-table in <a href="http://crowdsourcing-class.org/readings/downloads/econ/gender-wage-gap-on-mturk-the-cost-of-interruptions.pdf">adams-prassl+2020Oxford</a>,
-Table A8, page 33 (for males/females, not for villages).</em></p>
 <p><em>Suggestion: use t-test to determine whether the difference
 between T and C villages is statistically significant for each of the
 variables in the dataset. Focus only on the data from 1997 for poor.
@@ -1701,7 +1677,7 @@ for all the variables. You can use knitr::kable or xtable library to
 print it in a nicer way. You can use argument check.names=FALSE to
 create a data frame with non-syntactic variable names, e.g. ones that
 contain space like ``p value’’.</em></p>
-<pre class="r"><code>progresadf &lt;- read_delim(&quot;../INFO370/progresa-sample.csv.bz2&quot;)
+<pre class="r"><code>progresadf &lt;- read_delim(&quot;../progresa-sample.csv.bz2&quot;)
 progresa97 &lt;- progresadf %&gt;% 
   filter(year == 97 &amp; poor == &quot;pobre&quot;)
 
