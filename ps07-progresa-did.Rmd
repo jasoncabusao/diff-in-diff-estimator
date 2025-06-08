@@ -1,0 +1,288 @@
+---
+title: "INFO 370 Problem Set: Diff-in-Diff Estimator"
+author: "Jason Cabusao"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    theme: journal
+---
+<!--
+How to use this template:
+* Put in code chunks/markdown answers for each question.
+* Do not erase any of the headers, instructions, or css below.
+* Look at your homework before you submit to ensure you didn't make any formatting errors.
+-->
+
+<style>
+/* Custom css to make output file easier to read */
+
+/* Make instructions gray */
+h1, h2, h3, h4, h5, h6, em, i  {
+  color: darkgray;
+}
+
+/* Add lines to separate sections */
+h1::before {
+  content: "";
+  display: block;
+  border-top: 2px solid #333; /* dark line for sections */
+  margin-bottom: 10px;
+}
+h2::before {
+  content: "";
+  display: block;
+  border-top: 2px solid #ddd; /* light line for subsections */
+  margin-bottom: 10px;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE
+                      )
+```
+
+# Introduction
+*This week your task is (again!) to estimate the impact of the __Progresa__ program, a government social assistance program in Mexico, using real data. However, this time you will use differences-in-differences estimator.*
+
+*This program, as well as the details of its impact, are described in __schultz2004JofDevelEcon__(available on Canvas).  The data (__progresa-sample.csv.gz__, the same dataset as last week) is available on canvas in files/data.  Please consult the explanations from the last week problem set for description of the program and variables.  To put it briefly: from beginning of 1998, the families who were considered poor in certain villages (progresa villages) received a government subsidy given their kids attended school.  The progresa/non-progresa villages were chosen randomly.*
+
+*The goal of this problem set is to*
+* *compare samples (with t-test);*
+* *implement and use the double-differences estimator*
+*Your task is to estimate the impact of progresa subsidies on the school attendance.*
+
+
+* *please submit  your code (rmd) and html.*
+* *Please write well.  Do not print too many lines of data!  A few   lines are good for illustration/understanding but 10 or more lines   are usually too much.*
+* *Always explain and comment your results, do not expect the   grader is able to pick the correct number out of many with no further   explanations.*
+* *Working together is fun and useful but you have to submit your own   work.  Discussing the solutions and problems with your classmates is   all right but do not copy-paste their solution!  Please list the   students you collaborated with.*
+
+# 1: Was the randomization done correctly? (40pt)
+*Your first task is to analyze whether randomization was performed correctly.  Perfect randomization ensures that the treatment group and the control group are similar.  This is less important in terms of observable characteristics, but very-very important for unobservables. Obviously, we can only analyze the observables: are the pre-treatment (1997) demographic and village-related characteristics for the poor equal (in average) in treatment and control villages?*
+```{r}
+library(tidyverse)
+```
+
+
+
+## 1.1
+*(14pt) Present your results in a single table with the following   columns and 14 (or so) rows.  The table should look something like   this: __(See homework PDF for table)__  You can see a very similar table in [adams-prassl+2020Oxford](http://crowdsourcing-class.org/readings/downloads/econ/gender-wage-gap-on-mturk-the-cost-of-interruptions.pdf), Table A8, page 33 (for males/females, not for villages).*
+
+*Suggestion: use t-test to determine whether the difference between T and C villages is statistically significant for each of the variables in the dataset.  Focus only on the data from 1997 for poor.  Ignore variables such as folnum and village that do not carry social significance.  t-test can be done with t.test in .  For instance t.test(x, y) compares two unpaired vectors x and y, and outputs confidence intervals, p-value, and other things.  You can compare vectors (1, 2, 3, , 10) and (1, 2, 3, 4, 5) as this: __(See homework PDF for code sample)__  you can see that the p-value is 0.5597, i.e. we cannot reject at 5\% confidence level H_0 that these two vectors are just samples from similar data.*
+
+*Suggestion 2: There are many ways you can create this table, here is one suggestion you may follow:  create an empty data frame that contains the values you need:   variable name, average for T, average for C, their difference,   and p-value from t-test.  In R, you can also just create a NULL-object: __(See homework PDF for code sample)__  This will end up being your final data frame, the one you will print.  do a for-loop over all the column names, those columns that you   want to compare.  Inside the loop:  extract the respective column values for T and C   group as separate vectors  compute the difference of their average  do t-test between these two vectors and get the p-value  create a new one-line data frame (one row of the required table)   that contains the values for this variable only.  attach this new one-line data frame to the final data frame (the   one you created as empty).  You can use rbind as __(See homework PDF for code sample)__  See also [R   notes](https://faculty.washington.edu/otoomet/machinelearning-R/merging-reshaping.html), Ch 9.1 ``Merging dataframes line-by-line and column-by-column''.*
+
+
+
+*As a result, your data frame will contain all the required values for all the variables.  You can use knitr::kable or xtable library to print it in a nicer way.  You can use argument check.names=FALSE to create a data frame with non-syntactic variable names, e.g. ones that contain space like ``p value''.*
+```{r}
+progresadf <- read_delim("../INFO370/progresa-sample.csv.bz2")
+progresa97 <- progresadf %>% 
+  filter(year == 97 & poor == "pobre")
+
+treatment <- progresa97 %>% filter(progresa == "basal")
+control <- progresa97 %>% filter(progresa == "0")
+
+variables <- c("sex", "indig", "dist_sec", "grc", "fam_n", "min_dist", "dist_cap",
+               "hohedu", "hohwag", "welfare_index", "hohsex", "hohage", "age", "sc97")
+
+results <- NULL
+
+for (var in variables) {
+  tvals <- treatment[[var]]
+  cvals <- control[[var]]
+  
+  avgt <- mean(tvals, na.rm = TRUE)
+  avgc <- mean(cvals, na.rm = TRUE)
+  tcavgdif <- avgt - avgc
+  
+  test <- t.test(tvals, cvals, na.rm = TRUE)
+  p_value <- test$p.value
+  
+  row <- data.frame(Variable = var, 
+                    average_T = avgt, 
+                    average_C = avgc, 
+                    difference = tcavgdif, 
+                    pval = p_value)
+  
+  results <- rbind(results, row)
+}
+
+results
+```
+
+## 1.2
+*(3pt) What does it mean: ``the difference in the average     sex variable between     treatment and control villages is statistically significant at     0.05 significance level''.   Explain what it means in statistical sense.*
+
+*Consult the   [lecture     notes](https://faculty.washington.edu/otoomet/machineLearning.pdf), Ch 1.6.1 ``Statistical inference'', p 87.*
+
+This means that there is strong evidence suggesting that the proportion of males differs between the treament and control villages. We conducted a t-test to compare the averages of the two groups. The p-value tells us the probability of observing a difference as large as what we found in our sample, assuming that there is truly no difference in the population. Since the p-value is below the chosen significance level of 0.05, we conclude that the observed difference is unlikely to have occurred by random chance alone. This suggests that the randomization process may not have perfectly balanced the proportion of males across treatment and control villages. 
+
+## 1.3
+*(3pt) Did you find any statistically significant differences between treatment and control villages?*
+
+Variables such as sex, distance to secondary school (dist_sec), years of schooling of the household head (hohedu), monthly wages of the household head (hohwag), welfare index, minimum distance to an urban center (min_dist), distance to the capital (dist_cap), and age of the household head (hohage) showed significant differences between treatment and control groups (p-value < 0.05). This suggests that, despite the randomized design, there were some pre-existing imbalances in these variables.
+
+However, other variables such as indigenous status (indig), grade enrolled (grc), family size (fam_n), gender of the household head (hohsex), and child’s age (age) did not show statistically significant differences, meaning they were relatively well-balanced between the groups.
+
+## 1.4
+*(8pt) Why do we focus on 1997 differences only?*
+
+We focus on the 1997 differences because this is before the Progresa program was implemented. This means it provides a baseline for comparison. Since randomization is intended to create comparable treatment and control groups, examining pre-treatment characteristics helps us assess whether the groups were similar before the intervention began.
+
+By focusing only on 1997 data, we avoid any influence that the program itself may have had on household or individual characteristics in later years. This ensures that any observed differences in 1998 or beyond can be attributed to the impact of Progresa, rather than pre-existing disparities between the groups.
+
+## 1.5
+*(12pt) Why does it matter if treatment and control villages   differ in observable characteristics?  After all, we can   control for the observables!*
+
+It matters because it can indicate potential issues with randomization, which can, in turn, affect the validity of our causal conclusions. If treatment and control villages differ significantly in observable characteristics, it raises concerns that they might also differ in unobservable factors. Even though we can statistically adjust for observable differences using regression models or matching techniques, these adjustments rely on the assumption that the model is correctly specified. If certain pre-treatment characteristics influence how individuals respond to the program, the estimated effect of the program might be different across subgroups, complicating the interpretation of results.
+
+While we can statistically control for observable differences, large imbalances raise concerns about both bias in estimates and the validity of causal inference.
+
+
+# 2: Measuring impact (60pt)
+*Next, we measure the impact of Progresa.  You already did it with CS and BA estimator, so the only thing to do is essentially to repeat the previous with DiD estimator. DiD relaxes the identifying assumptions but you pay the price in the form of stricter data requirements and more complex analysis.*
+
+
+
+## 2.1
+*(3pt) First, let's just compare group averages.  Now you need four   groups: treated and control, before and after treatment.  DiD is the   difference in the trends for treated and control groups.  Compute these group   averages and the corresponding DiD estimator.*
+
+*Hint: it should be 0.0313.*''
+
+```{r}
+progresapoor <- progresadf %>% 
+  filter(poor == "pobre")
+
+group_avgs <- progresapoor %>%
+  group_by(year, progresa) %>%
+  summarize(avg_enrollment = mean(sc, na.rm = TRUE), .groups = "drop")
+
+group_avgs
+
+DiD <- (0.8464791 - 0.8226969) - (0.8076370 - 0.8151860)
+DiD
+```
+
+In 1997, control villages had an average enrollment rate of 81.5%. In 1997, treatment villages had an average enrollment rate of 82.3%. In 1998, control villages had an average enrollment rate of 80.8%. In 1998, treatment villages had an average enrollment rate of 84.6%.
+
+The corresponding DiD estimator is 0.0313312.
+
+*Now it's time to introduce regression.  You should regress the schooling outcome on pre/post reform indicator (i.e. year), treatment/control indicator (i.e. progresa), and their corresponding interaction effect.  You should only include the treatment and control groups (i.e. poor), not ``rich'' families.*
+
+## 2.2
+*(6pt) Estimate the effect using DiD simple regression (no other   covariates).*
+
+*See [lecture     notes](https://faculty.washington.edu/otoomet/machineLearning.pdf), Ch 3.6.3 ``Differences-in-differences estimator'', p 210.*
+
+```{r}
+progresapoor <- progresapoor %>%
+  mutate(
+    post = ifelse(year == 98, 1, 0),
+    treat = ifelse(progresa == "basal", 1, 0),
+  )
+
+summary(lm(sc ~ post * treat, data = progresapoor))
+
+```
+
+
+## 2.3
+*(6pt) Interpret all the coefficients.*
+
+The intercept coefficient of 0.815 represents the baseline school enrollment rate for the control group in 1997 and that, on average, 81.5% of children in control villages were enrolled in school in 1997 before the program. The coefficient meets the 0.05 threshold, meaning this estimate is statistically significant.
+
+The post coefficient of -0.0075 suggests that school enrollment slightly decreased by about 0.75 percentage points from 1997 to 1998 in the absence of the progresa program. However, this effect is not statistically significant since the p-value is 0.139, meaning it doesn't meet the 0.05 threshold. We cannot confidently say that enrollment changed due to time alone.
+
+The treat coefficient of 0.0075 means that in 1997, school enrollment in treatment villages was about 0.75 percentage points higher than in control villages. However, this coefficient is only marginally significant (p-value = 0.0909), meaning that while there may have been a small pre-existing difference, we cannot be fully certain that it was not due to random variation.
+
+The post and treat interaction coefficient of 0.0313 means that after Progresa was introduced in 1998, school enrollment in treatment villages increased by about 3.13 percentage points more than in control villages. This effect is highly significant since it's p-value is 1.34e-06, highly suggesting that Progresa had a positive impact on school enrollment.
+
+
+## 2.4
+*(5pt) Report the main result: it should be the same as above.  Is it   statistically significant?*
+
+The main result from the Difference-in-Differences (DiD) analysis shows that Progresa increased school enrollment by approximately 3.13 percentage points in treatment villages compared to control villages. This effect is statistically significant, with a p-value of 1.34e-06, meaning we can confidently reject the null hypothesis that the program had no impact. Progresa had a positive and meaningful effect on school attendance among poor children in Mexico.
+
+## 2.5
+*(4pt) Now estimate the effect using multiple regression--include all relevant control variables.*
+
+```{r}
+summary(lm(sc ~ post * treat + sex + indig + dist_sec + grc + age + fam_n + hohedu + hohwag + 
+                          dist_sec + min_dist + dist_cap + welfare_index + hohsex, data = progresapoor))
+```
+
+
+## 2.6
+*(4pt) Compare the results.  Is the multiple-regression version   similar?  Is it statistically significant?*
+
+In both the simple and multiple regression models, the key result remains the same. In the simple regression, the post:treat coefficient was 0.0313 (3.13 percentage points) with a p-value of 1.34e-06, indicating a statistically significant impact of Progresa. In the multiple-regression, the post:treat coefficient is 0.0292 (2.92 percentage points) with a p-value of 7.02e-08, which is still statistically significant. The estimated impact of Progresa is slightly lower after accounting for factors such as age, family size, education, and geography. However, this is minute. In both models, the effect of Progresa remains positive and significant even after including control variables.
+
+
+## 2.7
+*(7pt) What are 95\% confidence intervals for this estimator?  Does   this encompass all other estimates you received in this and in the previous PS?*
+
+*Do not use the existing functions to compute CI, compute it by hand   using the CI formula (e.g. the one you can find in the lecture   notes, section ``Theoretical confidence intervals'', p 98).*
+
+*Hint: the upper boundary of 95\% CI should be approximately 0.04.   It depends on how exactly did you do your model.*
+
+```{r}
+# mu +- 1.96 std error
+lwbndry <- 0.02916 - 1.96*0.005409
+upbndry <- 0.02916 + 1.96*0.005409
+
+lwbndry
+upbndry
+```
+
+The 95% confidence interval is (0.0186, 0.0398).
+
+Yes, the 95% confidence interval for the multiple regression estimate contains the simple regression estimate of 0.031 and previous estimates.
+
+## 2.8
+*(10pt) What is the identifying assumption behind this DiD   estimator?  Phrase it in terms of the institutional settings.   Would you be able to test it to a certain extent using the dataset   here?  Explain!*
+
+*Hint: what do you expect to see when comparing different villages?   The same villages over time?  Do you have this information in these   data?*
+
+The identifying assumption behind this DiD estimator is that without of the Progresa program, the trend in school enrollment would have been the same for both treatment and control villages. Any post-1997 difference in trends between treatment and control groups must be due to the intervention and not due to pre-existing differences.
+
+We can partially test this assumption by comparing 1997 enrollment trends. We can compare enrollment trends in 1997 before the program was implemented between treatment and control villages. If enrollment rates were already diverging in 1997 (before Progresa), then the assumption might be violated.
+
+We can also look at different villages over time. If we had data from additional years (e.g., 1996 or earlier), we could analyze pre-treatment trends to confirm parallel movement. Unfortunately, in this dataset, we only have one pre-treatment year (1997), which limits our ability to rigorously test for parallel trends.
+
+We can also check for pre-existing differences in observable characteristics. If treatment and control villages differ significantly in characteristics like school access, family size, or wealth, this could indicate that they were already on different enrollment trajectories.
+
+
+
+## 2.9
+*(11pt)   Compare this assumption with the assumptions behind CS and BA   estimator.  Which ones do you find more plausible?  Why?*
+
+*Base your claims   in the institutional settings: it is a randomized   experiment in poor rural villages, potentially conducted   imperfectly.   Do you think some assumptions   are more likely satisfied that others?*
+
+The DiD estimator relies on the  assumption that in the absence of Progresa, school enrollment trends would have been the same for both treatment and control villages. Given the randomized design, this assumption is fairly plausible, but we only have one pre-treatment year (1997), making it difficult to fully verify.
+
+The CS estimator assumes that controlling for observable characteristics eliminates selection bias. While randomization helps, there may still be unobserved factors (e.g., parental motivation) affecting school enrollment, making this assumption weaker than DiD.
+
+The BA estimator assumes no external factors influenced school enrollment over time, which is highly unrealistic. Economic changes, weather, or other policies could have impacted school attendance, making BA the least credible method.
+
+Overall, DiD is the most plausible due to randomization and its ability to control for both observable and unobservable factors. CS is weaker due to potential omitted variable bias, and BA is the least reliable as it ignores external influences.
+
+
+## 2.10
+*(4pt) Based on all your work you did above--what is your conclusion   about the efficacy of the Progresa program?*
+
+Based on the DiD analysis and the regression estimates, Progresa appears to have had a positive and statistically significant impact on school enrollment among poor rural children. The DiD estimator, both in simple and multiple regression models, consistently showed a significant increase in school attendance for children in treatment villages after the program's introduction.
+
+While the simple DiD model estimated an effect of 3.13 percentage points, the multiple regression model, which controls for additional factors like distance to school, household education, and demographics, produced a similar effect of 2.92 percentage points—confirming the program’s effectiveness.
+
+One thing to note is that the  assumption that in the absence of Progresa, school enrollment trends would have been the same for both treatment and control villages is difficult to fully test due to limited pre-treatment data, and while control variables help address observable differences, unobserved factors could still play a role.
+
+Overall, it is highly plausible that the Progresa program successfully increased school enrollment, making it an effective policy intervention for improving education outcomes in poor rural areas.
+
+
+# Finally
+*tell how much time (hours) did you spend on this PS.  Feel free to add other feedback.*
+
+This PS took me 4 hours.
