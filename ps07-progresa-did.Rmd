@@ -8,12 +8,6 @@ output:
     code_folding: hide
     theme: journal
 ---
-<!--
-How to use this template:
-* Put in code chunks/markdown answers for each question.
-* Do not erase any of the headers, instructions, or css below.
-* Look at your homework before you submit to ensure you didn't make any formatting errors.
--->
 
 <style>
 /* Custom css to make output file easier to read */
@@ -44,23 +38,18 @@ knitr::opts_chunk$set(echo=TRUE, message=FALSE, warning=FALSE
 ```
 
 # Introduction
-*This week your task is (again!) to estimate the impact of the __Progresa__ program, a government social assistance program in Mexico, using real data. However, this time you will use differences-in-differences estimator.*
+*Estimate the impact of the __Progresa__ program, a government social assistance program in Mexico, using real data. However, this time you will use differences-in-differences estimator.*
 
 *This program, as well as the details of its impact, are described in __schultz2004JofDevelEcon__(available on Canvas).  The data (__progresa-sample.csv.gz__, the same dataset as last week) is available on canvas in files/data.  Please consult the explanations from the last week problem set for description of the program and variables.  To put it briefly: from beginning of 1998, the families who were considered poor in certain villages (progresa villages) received a government subsidy given their kids attended school.  The progresa/non-progresa villages were chosen randomly.*
 
-*The goal of this problem set is to*
+*Goals*
 * *compare samples (with t-test);*
 * *implement and use the double-differences estimator*
-*Your task is to estimate the impact of progresa subsidies on the school attendance.*
+*Task is to estimate the impact of Progresa subsidies on school attendance.*
 
-
-* *please submit  your code (rmd) and html.*
-* *Please write well.  Do not print too many lines of data!  A few   lines are good for illustration/understanding but 10 or more lines   are usually too much.*
-* *Always explain and comment your results, do not expect the   grader is able to pick the correct number out of many with no further   explanations.*
-* *Working together is fun and useful but you have to submit your own   work.  Discussing the solutions and problems with your classmates is   all right but do not copy-paste their solution!  Please list the   students you collaborated with.*
 
 # 1: Was the randomization done correctly? (40pt)
-*Your first task is to analyze whether randomization was performed correctly.  Perfect randomization ensures that the treatment group and the control group are similar.  This is less important in terms of observable characteristics, but very-very important for unobservables. Obviously, we can only analyze the observables: are the pre-treatment (1997) demographic and village-related characteristics for the poor equal (in average) in treatment and control villages?*
+*Analyze whether randomization was performed correctly.  Perfect randomization ensures that the treatment group and the control group are similar.  This is less important in terms of observable characteristics, but very-very important for unobservables. Obviously, we can only analyze the observables: are the pre-treatment (1997) demographic and village-related characteristics for the poor equal (in average) in treatment and control villages?*
 ```{r}
 library(tidyverse)
 ```
@@ -68,7 +57,6 @@ library(tidyverse)
 
 
 ## 1.1
-*(14pt) Present your results in a single table with the following   columns and 14 (or so) rows.  The table should look something like   this: __(See homework PDF for table)__  You can see a very similar table in [adams-prassl+2020Oxford](http://crowdsourcing-class.org/readings/downloads/econ/gender-wage-gap-on-mturk-the-cost-of-interruptions.pdf), Table A8, page 33 (for males/females, not for villages).*
 
 *Suggestion: use t-test to determine whether the difference between T and C villages is statistically significant for each of the variables in the dataset.  Focus only on the data from 1997 for poor.  Ignore variables such as folnum and village that do not carry social significance.  t-test can be done with t.test in .  For instance t.test(x, y) compares two unpaired vectors x and y, and outputs confidence intervals, p-value, and other things.  You can compare vectors (1, 2, 3, , 10) and (1, 2, 3, 4, 5) as this: __(See homework PDF for code sample)__  you can see that the p-value is 0.5597, i.e. we cannot reject at 5\% confidence level H_0 that these two vectors are just samples from similar data.*
 
